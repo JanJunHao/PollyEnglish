@@ -1,0 +1,60 @@
+<svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+  <!-- 暖色渐变背景 -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFF4DA"/>
+      <stop offset="50%" stop-color="#FFCB7D"/>
+      <stop offset="100%" stop-color="#FF8B94"/>
+    </linearGradient>
+  </defs>
+  <rect width="260" height="260" fill="url(#bg)"/>
+
+  <!-- 地面阴影 -->
+  <ellipse cx="130" cy="225" rx="70" ry="7" fill="#2C1810" opacity="0.12"/>
+
+  <!-- 身体主体 -->
+  <ellipse cx="130" cy="140" rx="70" ry="80" fill="#E85B6A"/>
+  <!-- 身体高光 -->
+  <ellipse cx="110" cy="112" rx="24" ry="34" fill="#fff" opacity="0.22"/>
+
+  <!-- 肚子 -->
+  <ellipse cx="130" cy="160" rx="48" ry="52" fill="#FFD93D"/>
+  <!-- 肚子高光 -->
+  <ellipse cx="118" cy="142" rx="14" ry="18" fill="#fff" opacity="0.3"/>
+
+  <!-- 冠羽主体 -->
+  <path d="M 130 74 Q 114 46 134 32 Q 152 38 146 72 Z" fill="#A867FF"/>
+  <!-- 冠羽前面一根 -->
+  <path d="M 122 72 Q 114 50 122 38 Q 128 44 128 72 Z" fill="#FF6B9D" opacity="0.85"/>
+
+  <!-- 腮红 -->
+  <circle cx="104" cy="134" r="9" fill="#FFB3C6" opacity="0.6"/>
+  <circle cx="156" cy="134" r="9" fill="#FFB3C6" opacity="0.6"/>
+
+  <!-- 眼睛 -->
+  <ellipse cx="110" cy="116" rx="9" ry="10" fill="#2C1810"/>
+  <ellipse cx="150" cy="116" rx="9" ry="10" fill="#2C1810"/>
+  <!-- 眼睛高光 -->
+  <circle cx="113" cy="112" r="3" fill="#fff"/>
+  <circle cx="153" cy="112" r="3" fill="#fff"/>
+  <circle cx="107" cy="121" r="1.5" fill="#fff" opacity="0.6"/>
+  <circle cx="147" cy="121" r="1.5" fill="#fff" opacity="0.6"/>
+
+  <!-- 喙（微笑） -->
+  <path d="M 118 136 Q 130 150 142 136 Q 138 145 130 146 Q 122 145 118 136 Z" fill="#FFA630"/>
+  <path d="M 122 138 Q 130 142 138 138" stroke="#FFD4A0" stroke-width="1.5" fill="none" opacity="0.8" stroke-linecap="round"/>
+
+  <!-- 脚 -->
+  <g stroke="#FFA630" stroke-width="5" stroke-linecap="round" fill="none">
+    <path d="M 114 212 L 114 222"/>
+    <path d="M 146 212 L 146 222"/>
+  </g>
+  <g stroke="#FFA630" stroke-width="3" stroke-linecap="round" fill="none">
+    <path d="M 110 222 L 107 226"/>
+    <path d="M 114 222 L 114 226"/>
+    <path d="M 118 222 L 121 226"/>
+    <path d="M 142 222 L 139 226"/>
+    <path d="M 146 222 L 146 226"/>
+    <path d="M 150 222 L 153 226"/>
+  </g>
+</svg>

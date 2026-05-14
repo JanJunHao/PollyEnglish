@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "albums": [
+    {
+      "id": "ted-speakers",
+      "title": "TED 演讲合集",
+      "subtitle": "3 场启发性演讲 · 中级–高级",
+      "description": "精挑细选 3 场 TED 演讲，从沟通技巧到大脑科学到拖延症的真相。每个视频都来自世界顶级讲者，配有字级字幕和 AI 深度讲解。",
+      "video_ids": ["julian-treasure", "tim-urban", "ted-ed-dream"],
+      "theme_color_hex": 16769126,
+      "cover_image_name": null
+    },
+    {
+      "id": "speak-better",
+      "title": "提升表达力",
+      "subtitle": "学讲者如何驾驭语言 · 适合 B2+",
+      "description": "Julian Treasure 教你说让人想听的话，Tim Urban 用幽默把演讲变艺术。学的是英语，练的是表达。",
+      "video_ids": ["julian-treasure", "tim-urban"],
+      "theme_color_hex": 16755317,
+      "cover_image_name": null
+    }
+  ]
+}

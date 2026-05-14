@@ -1,0 +1,95 @@
+name: Polly
+
+# 第三方依赖。WhisperKit 走 SPM，第一次 build 拉模型（默认 tiny ~ 80 MB；可换 base / small）。
+# 模型在运行时 download 到 .documentDirectory，不进 bundle。
+packages:
+  WhisperKit:
+    url: https://github.com/argmaxinc/WhisperKit
+    from: 0.9.0
+
+options:
+  bundleIdPrefix: com.polly
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: "3Y8X58T6N8"
+    CODE_SIGN_STYLE: Automatic
+
+configFiles:
+  Debug: Polly/Config/Generated.xcconfig
+  Release: Polly/Config/Generated.xcconfig
+
+targets:
+  Polly:
+    type: application
+    platform: iOS
+    sources:
+      - path: Polly
+        excludes:
+          - "Config/Secrets.xcconfig"
+          - "Config/Secrets.xcconfig.template"
+          - "Config/Generated.xcconfig"
+          # 合规红线：TED 系 CC-BY-NC-ND，bundle 不许 host mp4。
+          # 这 3 个 demo 全部走 youtube_embed 路径（PlayerView 分发），mp4 是历史 dev 残留，
+          # 这里 exclude 让 build 不打进 IPA，省 100+MB 包体且过审。
+          # 切回 .native 测试时可临时注释这几行 + xcodegen generate。
+          - "Resources/Videos/julian-treasure.mp4"
+          - "Resources/Videos/ted-ed-dream.mp4"
+          - "Resources/Videos/tim-urban.mp4"
+          # 原始 vtt 字幕也是 YouTube/TED 版权材料，不进 bundle。
+          # Polly 自己生成的 Subtitles/demo-*.json 是加工产物，照常 ship。
+          - "Resources/Videos/julian-treasure.en.vtt"
+          - "Resources/Videos/julian-treasure.zh-CN.vtt"
+          - "Resources/Videos/ted-ed-dream.en.vtt"
+          - "Resources/Videos/ted-ed-dream.zh-CN.vtt"
+          - "Resources/Videos/tim-urban.en.vtt"
+          - "Resources/Videos/tim-urban.zh-CN.vtt"
+
+    dependencies:
+      - package: WhisperKit
+
+    info:
+      path: Polly/Info.plist
+      properties:
+        CFBundleDisplayName: Polly
+        UILaunchScreen:
+          # 纯黑底过场，1 帧后由 SplashView 接管。
+          # 早期用了 LaunchLogo PNG 容易出现白底+巨字+方框副标题，已弃用。
+          UIColorName: LaunchBackground
+          UIImageRespectsSafeAreaInsets: false
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIRequiresFullScreen: true
+        NSMicrophoneUsageDescription: Polly 需要访问麦克风以录制你的跟读发音
+        # polly-server 地址 + 鉴权 Bearer token（来自 Secrets.xcconfig）
+        PollyServerURL: $(POLLY_SERVER_URL)
+        PollyAPIKey: $(POLLY_API_KEY)
+        # ATS：dev 期允许本机 HTTP（模拟器走 127.0.0.1，真机改 LAN IP）。
+        # 上线 polly-server HTTPS 后删掉这两个 exception。
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: false
+          NSExceptionDomains:
+            127.0.0.1:
+              NSExceptionAllowsInsecureHTTPLoads: true
+              NSIncludesSubdomains: true
+            localhost:
+              NSExceptionAllowsInsecureHTTPLoads: true
+              NSIncludesSubdomains: true
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pollyEnglish.app
+        TARGETED_DEVICE_FAMILY: "1"   # 1 = iPhone only
+        ENABLE_PREVIEWS: "YES"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"

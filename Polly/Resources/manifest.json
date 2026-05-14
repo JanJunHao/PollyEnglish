@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "contents": [
+    {
+      "id": "julian-treasure",
+      "title": "How to speak so that people want to listen",
+      "author": "Julian Treasure",
+      "source": "TED",
+      "duration_seconds": 598,
+      "cefr_level": "B2",
+      "thumbnail_name": "julian-treasure-maxresdefault",
+      "category_color_hex": 16769126,
+      "is_recommended": true,
+      "categories": ["ted", "highlights"],
+      "play_mode": "youtube_embed",
+      "youtube_id": "eIho2S0ZahI"
+    },
+    {
+      "id": "ted-ed-dream",
+      "title": "Why do we dream?",
+      "author": "TED-Ed",
+      "source": "TED-Ed",
+      "duration_seconds": 298,
+      "cefr_level": "B1",
+      "thumbnail_name": "ted-ed-dream-maxresdefault",
+      "category_color_hex": 12108543,
+      "is_recommended": false,
+      "categories": ["discovery", "ted"],
+      "play_mode": "youtube_embed",
+      "youtube_id": "2W85Dwxx218"
+    },
+    {
+      "id": "tim-urban",
+      "title": "Inside the mind of a master procrastinator",
+      "author": "Tim Urban",
+      "source": "TED",
+      "duration_seconds": 844,
+      "cefr_level": "C1",
+      "thumbnail_name": "tim-urban-maxresdefault",
+      "category_color_hex": 16755829,
+      "is_recommended": false,
+      "categories": ["ted", "highlights"],
+      "play_mode": "youtube_embed",
+      "youtube_id": "arj7oStGLkU"
+    }
+  ]
+}
