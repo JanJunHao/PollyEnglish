@@ -281,10 +281,11 @@ struct PlayerView: View {
             .buttonStyle(.plain)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(video.title)
-                    .font(AppFonts.body(15, weight: .semibold))
-                    .foregroundColor(AppColors.textPrimary)
-                    .lineLimit(1)
+                MarqueeText(
+                    text: video.title,
+                    font: AppFonts.body(15, weight: .semibold),
+                    foreground: AppColors.textPrimary
+                )
 
                 HStack(spacing: 6) {
                     Text("\(video.author) · \(video.source)")
@@ -527,7 +528,10 @@ struct PlayerView: View {
         guard let segs = model.subtitle?.segments,
               model.currentSegmentId >= 0,
               model.currentSegmentId < segs.count else { return nil }
-        return segs[model.currentSegmentId]
+        let seg = segs[model.currentSegmentId]
+        // 还没到这一句的起点 → 浮动字幕保持隐藏（避免一开播放器就把第一句字幕"提前"显示出来）
+        guard model.currentTime >= seg.start else { return nil }
+        return seg
     }
 
     /// Demo 占位收藏（设计稿 State 01 第 3 句右上角有 ⭐），后续接真实生词本
@@ -686,16 +690,8 @@ struct PlayerView: View {
 
     // MARK: - Auto-hide
     private func scheduleAutoHide() {
+        // 关闭自动隐藏：进度条/控件常驻可见，用户单击仍可主动 toggle。
         autoHideTask?.cancel()
-        autoHideTask = Task {
-            try? await Task.sleep(nanoseconds: UInt64(autoHideDelay * 1_000_000_000))
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                if model.isPlaying {
-                    showControls = false
-                }
-            }
-        }
     }
 }
 

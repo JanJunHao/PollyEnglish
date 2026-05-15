@@ -31,6 +31,7 @@ final class SubtitlePreferences: ObservableObject {
 
     var sizeEnglish: CGFloat { 15 * fontScale }
     var sizeChinese: CGFloat { 13 * fontScale }
-    var sizeFloatingEnglish: CGFloat { 18 * fontScale }
+    // 浮动字幕字号跟字幕列表一致——下方列表已有放大版的字级高亮，浮动这里再加粗大就视觉冗余
+    var sizeFloatingEnglish: CGFloat { 15 * fontScale }
     var sizeFloatingChinese: CGFloat { 13 * fontScale }
 }

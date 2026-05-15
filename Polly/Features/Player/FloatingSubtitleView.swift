@@ -20,32 +20,28 @@ struct FloatingSubtitleView: View {
                 if prefs.showChinese, let translation = seg.translation, !translation.isEmpty {
                     Text(translation)
                         .font(AppFonts.body(prefs.sizeFloatingChinese))
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundColor(.white.opacity(0.95))
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                 }
             }
-            .padding(.horizontal, AppSpacing.lg)
+            // 紧贴文字的轻量胶囊：横向只比文字宽 12pt，纵向比文字高 6pt；
+            // 25% 黑保证白底视频也有对比，又不像满宽暗带那样压住画面。
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.black.opacity(0.03))
+            )
             .subtitleTextShadow()
+            .padding(.horizontal, AppSpacing.lg)
         }
     }
 
     private func wordHighlightedText(for seg: SubtitleSegment) -> Text {
-        var result = Text("")
-        for (i, word) in seg.words.enumerated() {
-            let space = i == 0 ? "" : " "
-            let color: Color
-            if currentTime > word.e {
-                color = .white.opacity(0.45)
-            } else if currentTime >= word.s {
-                color = AppColors.brandPrimary
-            } else {
-                color = .white
-            }
-            result = result + Text(space + word.w)
-                .font(AppFonts.body(prefs.sizeFloatingEnglish, weight: .medium))
-                .foregroundColor(color)
-        }
-        return result
+        // 整句一直白色：浮动字幕只是个伴读提示，字级高亮在下方字幕列表已有，这里不再随时间变色。
+        Text(seg.text)
+            .font(AppFonts.body(prefs.sizeFloatingEnglish, weight: .medium))
+            .foregroundColor(.white)
     }
 }

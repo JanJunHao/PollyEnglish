@@ -75,17 +75,13 @@ targets:
         # polly-server 地址 + 鉴权 Bearer token（来自 Secrets.xcconfig）
         PollyServerURL: $(POLLY_SERVER_URL)
         PollyAPIKey: $(POLLY_API_KEY)
-        # ATS：dev 期允许本机 HTTP（模拟器走 127.0.0.1，真机改 LAN IP）。
-        # 上线 polly-server HTTPS 后删掉这两个 exception。
+        # ATS：dev 期允许本机 + LAN HTTP。
+        # NSAllowsLocalNetworking 一口气放行 127.0.0.1 / localhost / RFC1918（192.168.x.x、10.x.x.x、172.16-31.x.x）
+        # 和 link-local，省得换 Wi-Fi 后 LAN IP 变了又改 exception。
+        # 上线 polly-server HTTPS 后整段删掉。
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: false
-          NSExceptionDomains:
-            127.0.0.1:
-              NSExceptionAllowsInsecureHTTPLoads: true
-              NSIncludesSubdomains: true
-            localhost:
-              NSExceptionAllowsInsecureHTTPLoads: true
-              NSIncludesSubdomains: true
+          NSAllowsLocalNetworking: true
 
     settings:
       base:

@@ -5,6 +5,7 @@ struct HomeView: View {
     @StateObject private var contentService = ContentService.shared
     @StateObject private var albumService = AlbumService.shared
     @Query private var watchEvents: [WatchEvent]
+    @Environment(\.scenePhase) private var scenePhase
     var switchToProfile: (() -> Void)? = nil
 
     @State private var presentedVideo: DemoVideo?
@@ -117,6 +118,12 @@ struct HomeView: View {
             // 开发期跳过首页直接进 Player（截图/演示用）
             if ProcessInfo.processInfo.arguments.contains("--autoplay") {
                 presentedVideo = videos.first(where: { $0.isRecommended })
+            }
+        }
+        .onChange(of: scenePhase) { _, new in
+            // 从后台回前台时静默刷一次，让"后台下载完的新可用视频"自然出现，不用用户手动下拉
+            if new == .active {
+                Task { await contentService.refresh() }
             }
         }
     }

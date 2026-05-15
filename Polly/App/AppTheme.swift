@@ -72,11 +72,16 @@ enum AppSpacing {
 
 // MARK: - Shadow 工具
 extension View {
-    /// 字幕文字阴影：在任意视频背景下保持清晰（文档 03.5）
+    /// 字幕文字描边：Netflix / YouTube 风格——文字像被一圈深色"勾边"，在任意视频背景下都看得清，
+    /// 且不像深色背景胶囊那样压住画面。
+    /// 四个 1pt 偏移的 0-radius 阴影合起来形成像素级勾边；外层一圈柔光让在亮背景上也分离。
     func subtitleTextShadow() -> some View {
         self
-            .shadow(color: .black.opacity(0.95), radius: 16, x: 0, y: 2)
-            .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 0)
+            .shadow(color: .black.opacity(0.95), radius: 0, x: 1,  y: 0)
+            .shadow(color: .black.opacity(0.95), radius: 0, x: -1, y: 0)
+            .shadow(color: .black.opacity(0.95), radius: 0, x: 0,  y: 1)
+            .shadow(color: .black.opacity(0.95), radius: 0, x: 0,  y: -1)
+            .shadow(color: .black.opacity(0.55), radius: 3, x: 0,  y: 1)
     }
 
     /// 当前句左侧黄色发光条阴影
