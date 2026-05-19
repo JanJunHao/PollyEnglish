@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SubtitleListView: View {
     let subtitle: SubtitleDocument?
+    var loadState: PlayerModel.SubtitleLoadState = .loaded
     let currentSegmentId: Int
     let currentTime: Double
     let favoriteIds: Set<Int>
@@ -53,13 +54,56 @@ struct SubtitleListView: View {
                 }
             }
         } else {
-            VStack {
-                Text("字幕加载失败")
-                    .font(AppFonts.body(13))
-                    .foregroundColor(AppColors.textTertiary)
+            switch loadState {
+            case .loading:
+                SubtitleLoadingView()
+            case .failed, .loaded:
+                // .loaded 但 subtitle 仍为空属异常情况，按失败兜底
+                SubtitleUnavailableView()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+}
+
+// MARK: - 字幕加载中 / 失败占位
+
+/// 字幕加载中：脉动的字幕图标 + 文案，明确告诉用户「在加载」而非「失败」。
+private struct SubtitleLoadingView: View {
+    @State private var pulsing = false
+
+    var body: some View {
+        VStack(spacing: AppSpacing.md) {
+            Image(systemName: "captions.bubble")
+                .font(.system(size: 30, weight: .regular))
+                .foregroundColor(AppColors.brandPrimary)
+                .opacity(pulsing ? 1.0 : 0.3)
+                .scaleEffect(pulsing ? 1.0 : 0.92)
+                .animation(
+                    .easeInOut(duration: 0.8).repeatForever(autoreverses: true),
+                    value: pulsing
+                )
+
+            Text("字幕加载中…")
+                .font(AppFonts.body(13))
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear { pulsing = true }
+    }
+}
+
+/// 字幕确实加载失败 / 不存在时的占位。
+private struct SubtitleUnavailableView: View {
+    var body: some View {
+        VStack(spacing: AppSpacing.sm) {
+            Image(systemName: "captions.bubble.slash")
+                .font(.system(size: 28, weight: .regular))
+                .foregroundColor(AppColors.textTertiary)
+            Text("字幕加载失败")
+                .font(AppFonts.body(13))
+                .foregroundColor(AppColors.textTertiary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

@@ -5,12 +5,20 @@ import Combine
 /// 播放器状态机：协调 AVPlayer / 字幕索引 / 控件操作。
 final class PlayerModel: ObservableObject {
 
+    /// 字幕加载状态。区分「加载中」和「加载失败」，避免拉取过程中误报失败。
+    enum SubtitleLoadState {
+        case loading
+        case loaded
+        case failed
+    }
+
     // MARK: - Output
     let player: AVPlayer
     @Published private(set) var currentTime: Double = 0
     @Published private(set) var duration: Double = 0
     @Published private(set) var isPlaying: Bool = false
     @Published private(set) var subtitle: SubtitleDocument?
+    @Published private(set) var subtitleLoadState: SubtitleLoadState = .loading
     @Published private(set) var currentSegmentId: Int = 0
     @Published private(set) var isReady: Bool = false
     /// 当前单句循环的 segment id；nil 表示不循环。
@@ -29,7 +37,7 @@ final class PlayerModel: ObservableObject {
     private var manualSelectLockId: Int?
 
     // MARK: - Init
-    init(videoURL: URL, subtitleVideoId: String?) {
+    init(videoURL: URL, subtitleVideoId: String?, preloadedSubtitle: SubtitleDocument? = nil) {
         // 配置 AVAudioSession 为播放模式，让模拟器/真机静音键开启也能出声音。
         Self.configureAudioSession()
 
@@ -37,9 +45,14 @@ final class PlayerModel: ObservableObject {
         self.player = AVPlayer(playerItem: item)
         self.player.automaticallyWaitsToMinimizeStalling = true
 
-        if let id = subtitleVideoId {
+        // 字幕来源优先级：外部预加载（本地导入流 WhisperKit 产物）→ bundle demo-<id>.json
+        if let preloadedSubtitle {
+            self.subtitle = preloadedSubtitle
+        } else if let id = subtitleVideoId {
             self.subtitle = SubtitleService.load(videoId: id)
         }
+        // 已有字幕即视为加载完成；否则保持 .loading，等 PlayerView 决定远端拉取结果。
+        self.subtitleLoadState = self.subtitle != nil ? .loaded : .loading
 
         attachTimeObserver()
         observeDurationFallback(item: item)
@@ -69,6 +82,17 @@ final class PlayerModel: ObservableObject {
     /// 当 video.subtitleURL 非空时，PlayerView 用 SubtitleService.loadAsync 拉好后调这个。
     func setSubtitle(_ doc: SubtitleDocument) {
         self.subtitle = doc
+        self.subtitleLoadState = .loaded
+    }
+
+    /// 标记字幕开始异步加载（远端拉取中）。
+    func beginSubtitleLoading() {
+        self.subtitleLoadState = .loading
+    }
+
+    /// 标记字幕加载失败（远端拉取失败且无 bundle 兜底）。
+    func markSubtitleFailed() {
+        self.subtitleLoadState = .failed
     }
 
     // MARK: - Setup
@@ -166,6 +190,11 @@ final class PlayerModel: ObservableObject {
 
     func play() {
         guard !isPlaying else { return }
+        // 播放结束后画面停在末尾，此时直接 play() AVPlayer 不会动——先 seek 回开头。
+        if duration > 0, currentTime >= duration - 0.5 {
+            player.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero)
+            currentTime = 0
+        }
         player.play()
         player.rate = playbackRate  // 恢复速率（暂停后 rate 会被清掉）
         isPlaying = true

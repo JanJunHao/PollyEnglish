@@ -41,6 +41,41 @@ final class ExplanationService {
         cache[key] = result
         return result
     }
+
+    /// 外刊整句讲解。复用同一个 `/v1/ai/explain`——文章 id 当 video_id、句序当 segment_id。
+    /// 服务端在入库时已按 article_id / 句序预生成讲解缓存，命中即秒回。
+    func deepExplain(articleSentence sentence: ArticleSegment,
+                     article: Article) async throws -> ExplanationResult {
+        let key = "\(article.id)#\(sentence.id)"
+        if let cached = cache[key] { return cached }
+
+        let body = ExplainRequest(
+            sentence: sentence.text,
+            video_id: article.id,
+            segment_id: sentence.id,
+            video_title: article.title,
+            video_author: article.author,
+            video_source: article.source,
+            cefr_level: article.cefrLevel,
+            context_before: nil,
+            context_after: nil
+        )
+
+        let resp: ExplainResponse = try await PollyAPIClient.shared.post("v1/ai/explain", body: body)
+
+        let result = ExplanationResult(
+            sentence: resp.sentence,
+            natural_translation: resp.natural_translation,
+            core_explanation: resp.core_explanation,
+            key_vocab: resp.key_vocab,
+            grammar_point: resp.grammar_point,
+            cultural_note: resp.cultural_note,
+            pronunciation_tip: resp.pronunciation_tip,
+            similar_expressions: resp.similar_expressions
+        )
+        cache[key] = result
+        return result
+    }
 }
 
 // MARK: - DTOs (对齐 polly-server/app/schemas.py 的 ExplainIn / ExplainOut)

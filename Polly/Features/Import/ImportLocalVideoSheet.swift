@@ -47,9 +47,7 @@ struct ImportLocalVideoSheet: View {
             }
         }
         .fullScreenCover(item: $playerHandoff) { h in
-            YouTubeEmbedPlayerView(video: h.video, preloadedSubtitle: h.subtitle)
-            // 注：YouTubeEmbedPlayerView 名字保留但其实可以接 native 视频；这里走的是
-            // local 文件 + 字幕，所以借用一下 UI 框架。后续单独抽 LocalPlayerView 更干净。
+            PlayerView(video: h.video, preloadedSubtitle: h.subtitle)
         }
     }
 
@@ -266,8 +264,7 @@ struct ImportLocalVideoSheet: View {
             pendingError = "字幕文件读不到"
             return
         }
-        // 借 DemoVideo 这个 UI model；playMode 用 .native 让 PlayerView 走 AVPlayer，但
-        // YouTubeEmbedPlayerView 不接 native，所以这里走一个特殊 path：videoURL 直接给本地文件路径。
+        // 借 DemoVideo 这个 UI model：videoURL 给本地文件路径，PlayerView 走 AVPlayer 播放。
         let video = DemoVideo(
             id: local.id.uuidString,
             title: local.displayName,
@@ -279,8 +276,6 @@ struct ImportLocalVideoSheet: View {
             categoryColorHex: 0xB8C4FF,
             isRecommended: false,
             categories: [],
-            playMode: .native,
-            youtubeId: nil,
             thumbnailURL: nil,
             videoURL: local.fileURL.absoluteString
         )

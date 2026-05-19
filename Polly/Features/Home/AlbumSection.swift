@@ -2,6 +2,7 @@ import SwiftUI
 
 /// 首页「精选专辑」横滑模块。卡片设计与 FeaturedCourseRow 同源（160pt 宽）但更高更彩。
 struct AlbumSection: View {
+    @Environment(\.theme) private var theme
     let albums: [Album]
     let videoPool: [DemoVideo]
     let onSelect: (Album) -> Void
@@ -11,7 +12,7 @@ struct AlbumSection: View {
             HStack {
                 Text("精选专辑")
                     .font(AppFonts.body(17, weight: .semibold))
-                    .foregroundColor(AppColors.textPrimary)
+                    .foregroundColor(theme.text)
                 Spacer()
             }
             .padding(.horizontal, AppSpacing.lg)
@@ -34,6 +35,7 @@ struct AlbumSection: View {
 }
 
 private struct AlbumCard: View {
+    @Environment(\.theme) private var theme
     let album: Album
     let videoCount: Int
 
@@ -64,11 +66,11 @@ private struct AlbumCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(album.title)
                     .font(AppFonts.body(14, weight: .semibold))
-                    .foregroundColor(AppColors.textPrimary)
+                    .foregroundColor(theme.text)
                     .lineLimit(1)
                 Text(album.subtitle)
                     .font(AppFonts.body(11))
-                    .foregroundColor(AppColors.textTertiary)
+                    .foregroundColor(theme.textTer)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }

@@ -9,7 +9,7 @@ struct ProfileView: View {
     @Query private var favorites: [SentenceFavorite]
 
     enum ActiveSheet: String, Identifiable {
-        case login, vocabulary, favorites, subtitleSettings, feedback, aiDialog, shadowingHistory, about, importYouTube, importLocal
+        case login, vocabulary, favorites, subtitleSettings, feedback, aiDialog, shadowingHistory, about, importLocal
         var id: String { rawValue }
     }
     @State private var activeSheet: ActiveSheet?
@@ -83,10 +83,6 @@ struct ProfileView: View {
             case .about:
                 AboutSheet { activeSheet = nil }
                     .presentationDetents([.medium])
-                    .presentationDragIndicator(.visible)
-            case .importYouTube:
-                ImportYouTubeSheet()
-                    .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
             case .importLocal:
                 ImportLocalVideoSheet()
@@ -230,10 +226,6 @@ struct ProfileView: View {
             divider
             menuRow(icon: "waveform", title: "跟读历史", subtitle: "即将上线") {
                 activeSheet = .shadowingHistory
-            }
-            divider
-            menuRow(icon: "link.badge.plus", title: "从 YouTube 导入", subtitle: "粘 URL → 自动生成字幕") {
-                activeSheet = .importYouTube
             }
             divider
             menuRow(icon: "folder.badge.plus", title: "导入本地视频", subtitle: "选 mp4 / mov · WhisperKit 离线转录") {

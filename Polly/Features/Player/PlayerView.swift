@@ -42,20 +42,14 @@ struct PlayerView: View {
 
     private let autoHideDelay: TimeInterval = 10
 
-    init(video: DemoVideo) {
+    init(video: DemoVideo, preloadedSubtitle: SubtitleDocument? = nil) {
         self.video = video
-        // youtube_embed 模式不读 bundle mp4（合规：上架版必须不 host TED 等 CC-NC 内容）。
-        // 这里给 PlayerModel 喂一个 about:blank 占位 URL，因为 body 会在 .youtubeEmbed 时
-        // 直接 return YouTubeEmbedPlayerView，PlayerModel 实际上不会被使用。
         let videoURL: URL = {
-            if video.playMode == .youtubeEmbed {
-                return URL(string: "about:blank")!
-            }
-            // 1) 远端 URL（NASA / IA / VOA 走这）：优先用 server 传过来的
+            // 1) 远端 URL（NASA / IA / VOA、本地导入视频走这）
             if let remote = video.videoURL, let u = URL(string: remote) {
                 return u
             }
-            // 2) bundle 内同名 mp4（3 个 demo 走这）
+            // 2) bundle 内同名 mp4
             if let u = Bundle.main.url(forResource: video.id, withExtension: "mp4") {
                 return u
             }
@@ -63,16 +57,21 @@ struct PlayerView: View {
             return Bundle.main.url(forResource: "sample-30s", withExtension: "mp4")
                 ?? URL(string: "https://download.samplelib.com/mp4/sample-30s.mp4")!
         }()
-        _model = StateObject(wrappedValue: PlayerModel(videoURL: videoURL, subtitleVideoId: video.id))
+        _model = StateObject(wrappedValue: PlayerModel(
+            videoURL: videoURL,
+            subtitleVideoId: video.id,
+            preloadedSubtitle: preloadedSubtitle
+        ))
     }
 
-    @ViewBuilder
     var body: some View {
-        if video.playMode == .youtubeEmbed {
-            YouTubeEmbedPlayerView(video: video)
-        } else {
-            nativeBody
-        }
+        nativeBody
+    }
+
+    /// 播放器加载中：视频未就绪、或字幕仍在拉取。
+    /// 加载期间统一只显示加载动画，隐藏进度条 / 播放控件 / 字幕列表。
+    private var isLoading: Bool {
+        !model.isReady || model.subtitleLoadState == .loading
     }
 
     private var nativeBody: some View {
@@ -84,12 +83,15 @@ struct PlayerView: View {
                 videoArea
                 chipsToolbar
                 subtitleArea
-                progressArea
-                    .opacity(showControls ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.2), value: showControls)
-                mainControls
-                    .opacity(showControls ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.2), value: showControls)
+                // 加载中不显示进度条 / 播放控件，等视频+字幕都就绪再一起出现
+                if !isLoading {
+                    progressArea
+                        .opacity(showControls ? 1 : 0)
+                        .animation(.easeInOut(duration: 0.2), value: showControls)
+                    mainControls
+                        .opacity(showControls ? 1 : 0)
+                        .animation(.easeInOut(duration: 0.2), value: showControls)
+                }
                 HStack(spacing: 0) {
                     // Speed tab 改为 Menu 直接弹倍速选择
                     Menu {
@@ -135,11 +137,18 @@ struct PlayerView: View {
         .onAppear {
             // 远端字幕优先：如果 video.subtitleURL 非空，覆盖掉 PlayerModel init 时的 bundle 字幕
             if let remote = video.subtitleURL {
+                if model.subtitle == nil { model.beginSubtitleLoading() }
                 Task { @MainActor in
                     if let doc = await SubtitleService.loadAsync(from: remote) {
                         model.setSubtitle(doc)
+                    } else if model.subtitle == nil {
+                        // 远端拉取失败且无 bundle 兜底，才算真正失败
+                        model.markSubtitleFailed()
                     }
                 }
+            } else if model.subtitle == nil {
+                // 既无远端字幕也无 bundle 字幕：确实没有字幕
+                model.markSubtitleFailed()
             }
 
             model.togglePlay()
@@ -357,19 +366,30 @@ struct PlayerView: View {
                 Color.black
                 AVPlayerLayerView(player: model.player)
 
-                // 浮动字幕（视频区底部，叠加在画面上）
-                FloatingSubtitleView(
-                    segment: currentSegment,
-                    currentTime: model.currentTime,
-                    prefs: prefs
-                )
-                .padding(.bottom, AppSpacing.lg)
+                // 加载中（视频缓冲 / 字幕拉取）：转圈加载动画。
+                // 画面与字幕同步——字幕区同样等加载完成才显示，避免画面还黑着字幕先冒出来。
+                if isLoading {
+                    ProgressView()
+                        .tint(.white)
+                        .scaleEffect(1.3)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+
+                // 浮动字幕（视频区底部，叠加在画面上）；加载完成后才显示
+                if !isLoading {
+                    FloatingSubtitleView(
+                        segment: currentSegment,
+                        currentTime: model.currentTime,
+                        prefs: prefs
+                    )
+                    .padding(.bottom, AppSpacing.lg)
+                }
 
                 // 分区手势层（左 -10s + 上下滑亮度 / 中央 播暂 / 右 +10s + 上下滑音量 / 单击切控件）
                 VideoGestureLayer(
                     onSingleTap: {
-                        showControls.toggle()
-                        if showControls { scheduleAutoHide() }
+                        // 单击只保证控件可见，不再隐藏——控件常驻
+                        showControls = true
                     },
                     onDoubleTapLeft:   { model.seek(by: -10); scheduleAutoHide() },
                     onDoubleTapCenter: { model.togglePlay(); scheduleAutoHide() },
@@ -419,30 +439,50 @@ struct PlayerView: View {
     }
 
     // MARK: - Subtitle Area
+    @ViewBuilder
     private var subtitleArea: some View {
-        SubtitleListView(
-            subtitle: model.subtitle,
-            currentSegmentId: model.currentSegmentId,
-            currentTime: model.currentTime,
-            favoriteIds: realFavoriteIds,
-            loopingSegmentId: model.loopSegmentId,
-            prefs: prefs,
-            onSelect: { model.seekToSegment($0) },
-            onWordTap: { word, seg in
-                handleWordTap(word: word, in: seg)
-            },
-            onLongPress: { seg in
-                handleSentenceLongPress(seg)
-            },
-            onDoubleTap: { seg in
-                model.toggleLoop(segmentId: seg.id)
-            },
-            onToggleFavorite: { seg in
-                toggleSentenceFavorite(seg)
+        Group {
+            if !isLoading {
+                SubtitleListView(
+                    subtitle: model.subtitle,
+                    loadState: model.subtitleLoadState,
+                    currentSegmentId: model.currentSegmentId,
+                    currentTime: model.currentTime,
+                    favoriteIds: realFavoriteIds,
+                    loopingSegmentId: model.loopSegmentId,
+                    prefs: prefs,
+                    onSelect: { model.seekToSegment($0) },
+                    onWordTap: { word, seg in
+                        handleWordTap(word: word, in: seg)
+                    },
+                    onLongPress: { seg in
+                        handleSentenceLongPress(seg)
+                    },
+                    onDoubleTap: { seg in
+                        model.toggleLoop(segmentId: seg.id)
+                    },
+                    onToggleFavorite: { seg in
+                        toggleSentenceFavorite(seg)
+                    }
+                )
+            } else {
+                // 视频就绪前不显示字幕——与画面同步出现
+                subtitleLoadingPlaceholder
             }
-        )
+        }
         .frame(maxHeight: .infinity)
         .simultaneousGesture(pinchToZoomGesture)
+    }
+
+    private var subtitleLoadingPlaceholder: some View {
+        VStack(spacing: AppSpacing.md) {
+            ProgressView()
+                .tint(AppColors.textTertiary)
+            Text("加载中…")
+                .font(AppFonts.body(13))
+                .foregroundColor(AppColors.textTertiary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     /// 双指捏合调字幕字号：限制在 prefs 滑块同范围 [0.85, 1.4]。

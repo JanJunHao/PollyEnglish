@@ -5,11 +5,11 @@ import SwiftData
 struct PollyApp: App {
     var body: some Scene {
         WindowGroup {
-            SplashView {
-                RootTabView()
+            ThemeProvider {
+                SplashView {
+                    RootTabView()
+                }
             }
-            .preferredColorScheme(.dark)
-            .background(AppColors.bgPrimary)
         }
         .modelContainer(for: [VocabularyItem.self, SentenceFavorite.self, WatchEvent.self, LocalVideo.self])
     }

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// 视频区底部叠加的浮动字幕：当前句 + 字级三态高亮 + 中文翻译。
-/// 设计稿 State 01 的视频区底部就是这个组件。
+/// 视频区底部叠加的浮动字幕：当前句，纯英文。
+/// 浮动字幕只是叠在画面上的伴读提示，固定纯英文；中英对照在下方字幕列表里有。
 /// 文字阴影确保在任何视频背景下都清晰可读（文档 03.5）。
 struct FloatingSubtitleView: View {
     let segment: SubtitleSegment?
@@ -10,31 +10,21 @@ struct FloatingSubtitleView: View {
 
     var body: some View {
         if let seg = segment {
-            VStack(spacing: 2) {
-                if prefs.showEnglish {
-                    wordHighlightedText(for: seg)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                }
-
-                if prefs.showChinese, let translation = seg.translation, !translation.isEmpty {
-                    Text(translation)
-                        .font(AppFonts.body(prefs.sizeFloatingChinese))
-                        .foregroundColor(.white.opacity(0.95))
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                }
-            }
-            // 紧贴文字的轻量胶囊：横向只比文字宽 12pt，纵向比文字高 6pt；
-            // 25% 黑保证白底视频也有对比，又不像满宽暗带那样压住画面。
-            .padding(.horizontal, 12)
-            .padding(.vertical, 4)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.black.opacity(0.03))
-            )
-            .subtitleTextShadow()
-            .padding(.horizontal, AppSpacing.lg)
+            wordHighlightedText(for: seg)
+                .multilineTextAlignment(.center)
+                // 长句允许换到 3 行；再长则等比缩字（最多缩到 80%），避免 "..." 截断
+                .lineLimit(3)
+                .minimumScaleFactor(0.8)
+                // 紧贴文字的轻量胶囊：横向只比文字宽 12pt，纵向比文字高 6pt；
+                // 25% 黑保证白底视频也有对比，又不像满宽暗带那样压住画面。
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.black.opacity(0.03))
+                )
+                .subtitleTextShadow()
+                .padding(.horizontal, AppSpacing.lg)
         }
     }
 

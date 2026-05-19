@@ -2,6 +2,7 @@ import SwiftUI
 
 /// 内容分类标签。未来内容打标后自动归类到对应模块。
 enum VideoCategory: String, CaseIterable, Identifiable, Codable {
+    case recentlyAdded    = "recently_added"     // 临时：本批新增内容聚合，置顶展示
     case dailyNews        = "daily_news"
     case movie            = "movie"
     case discovery        = "discovery"
@@ -14,6 +15,7 @@ enum VideoCategory: String, CaseIterable, Identifiable, Codable {
 
     var displayName: String {
         switch self {
+        case .recentlyAdded:   return "今日新增"
         case .dailyNews:       return "每日快讯"
         case .movie:           return "电影"
         case .discovery:       return "探索发现"
@@ -26,6 +28,7 @@ enum VideoCategory: String, CaseIterable, Identifiable, Codable {
 
     var icon: String {
         switch self {
+        case .recentlyAdded:   return "sparkles"
         case .dailyNews:       return "newspaper.fill"
         case .movie:           return "film.fill"
         case .discovery:       return "globe.americas.fill"
@@ -39,6 +42,7 @@ enum VideoCategory: String, CaseIterable, Identifiable, Codable {
     /// 模块标签的强调色（chip 底色 + 描边）
     var accentColorHex: UInt32 {
         switch self {
+        case .recentlyAdded:   return 0x5FD98C  // 绿（新内容）
         case .dailyNews:       return 0xFF6B6B  // 红
         case .movie:           return 0x6B9DFF  // 蓝
         case .discovery:       return 0x4ECDC4  // 青

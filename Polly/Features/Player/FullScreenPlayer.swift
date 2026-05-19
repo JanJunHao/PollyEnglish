@@ -34,6 +34,9 @@ private struct FullScreenPlayerRep: UIViewControllerRepresentable {
         vc.player = player
         vc.showsPlaybackControls = true
         vc.videoGravity = .resizeAspect
+        // 全屏态下切后台自动进画中画小窗
+        vc.allowsPictureInPicturePlayback = true
+        vc.canStartPictureInPictureAutomaticallyFromInline = true
         return vc
     }
 

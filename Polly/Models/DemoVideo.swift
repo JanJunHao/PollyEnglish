@@ -1,29 +1,21 @@
 import SwiftUI
 
-/// 播放模式：native 走 AVPlayer + bundle/CDN mp4；youtubeEmbed 走 WKWebView + YouTube iFrame
-/// （TED 等 CC-NC 内容合规红线：上架版必须走 youtubeEmbed）
-enum VideoPlayMode: String, Codable, Hashable {
-    case native
-    case youtubeEmbed = "youtube_embed"
-}
-
-/// Demo 视频元信息。本周 demo 硬编码 3 个；后续从 manifest.json 加载。
+/// 视频元信息。所有视频走 native 播放（AVPlayer + 自托管 mp4）。
 struct DemoVideo: Identifiable, Hashable {
     let id: String
     let title: String
     let author: String
-    let source: String           // 来源：TED / TED-Ed
+    let source: String
     let durationSeconds: Int
     let cefrLevel: String        // A2 / B1 / B2 / C1
     let thumbnailName: String?   // bundle 内图片名；纯远端视频为 nil（走 thumbnailURL）
     let categoryColorHex: UInt32 // 列表卡左上角分类圆点
     let isRecommended: Bool      // 首页 Banner 显示
     let categories: [VideoCategory]  // 一个视频可归多个模块
-    var playMode: VideoPlayMode = .native    // 默认 native；TED 系列在 manifest/server 里覆写
-    var youtubeId: String? = nil             // playMode == .youtubeEmbed 时必填
     var thumbnailURL: String? = nil          // 远端缩略图 URL；nil 则回退到 bundle 的 thumbnailName
-    var videoURL: String? = nil              // native 模式的远端 mp4 URL（NASA / IA / VOA）；nil 则按 id 找 bundle 内 mp4
+    var videoURL: String? = nil              // 远端 mp4 URL（NASA / IA / VOA）；nil 则按 id 找 bundle 内 mp4
     var subtitleURL: String? = nil           // 远端字幕 JSON URL（SubtitleDocument 格式）；nil 则查 bundle demo-<id>.json
+    var updatedAt: Date = .distantPast       // 服务端 updated_at；用于「最近更新」混合 feed 排序
 
     var categoryColor: Color { Color(hex: categoryColorHex) }
 
@@ -35,101 +27,114 @@ struct DemoVideo: Identifiable, Hashable {
 }
 
 extension DemoVideo {
+    /// 仅供 SwiftUI Preview 使用的样例数据。运行时内容一律来自 ContentService。
     static let all: [DemoVideo] = [
         DemoVideo(
-            id: "julian-treasure",
-            title: "How to speak so that people want to listen",
-            author: "Julian Treasure",
-            source: "TED",
-            durationSeconds: 9 * 60 + 58,
-            cefrLevel: "B2",
-            thumbnailName: "julian-treasure-maxresdefault",
-            categoryColorHex: 0xFFE066,
-            isRecommended: true,
-            categories: [.ted, .highlights],
-            playMode: .youtubeEmbed,
-            youtubeId: "eIho2S0ZahI"
-        ),
-        DemoVideo(
-            id: "ted-ed-dream",
-            title: "Why do we dream?",
-            author: "TED-Ed",
-            source: "TED-Ed",
-            durationSeconds: 4 * 60 + 58,
+            id: "preview-sample",
+            title: "Sample Video for Previews",
+            author: "Polly",
+            source: "Preview",
+            durationSeconds: 5 * 60,
             cefrLevel: "B1",
-            thumbnailName: "ted-ed-dream-maxresdefault",
-            categoryColorHex: 0xB8C4FF,
-            isRecommended: false,
-            categories: [.discovery, .ted],
-            playMode: .youtubeEmbed,
-            youtubeId: "2W85Dwxx218"
-        ),
-        DemoVideo(
-            id: "tim-urban",
-            title: "Inside the mind of a master procrastinator",
-            author: "Tim Urban",
-            source: "TED",
-            durationSeconds: 14 * 60 + 4,
-            cefrLevel: "C1",
-            thumbnailName: "tim-urban-maxresdefault",
-            categoryColorHex: 0xFFAC75,
-            isRecommended: false,
-            categories: [.ted, .highlights],
-            playMode: .youtubeEmbed,
-            youtubeId: "arj7oStGLkU"
+            thumbnailName: nil,
+            categoryColorHex: 0x4ECDC4,
+            isRecommended: true,
+            categories: [.discovery]
         )
     ]
 }
 
-/// 缩略图视图：
-/// - name + url 都有：先 bundle 占位，AsyncImage 成功后切远端图（demo 3 视频的体验）
-/// - 只有 url：纯远端，loading 用纯色占位（100 条 TED 都是这条路径）
-/// - 只有 name：纯本地（保留向后兼容）
-/// - 都无：bgElevated 占位
+/// 远端缩略图的进程内解码缓存。
+/// AsyncImage 不缓存：卡片滑出再滑回会从 .empty 重新加载，闪一下方块占位。
+/// 这里缓存「已解码的 UIImage」，滑回时同步命中、零闪烁。
+enum ThumbnailCache {
+    static let shared: NSCache<NSURL, UIImage> = {
+        let c = NSCache<NSURL, UIImage>()
+        c.countLimit = 200          // 最多缓存 200 张缩略图
+        return c
+    }()
+}
+
+/// 缩略图视图，三种状态各有专属占位，避免「加载失败」和「加载中」糊成一片黑底：
+/// - 加载中：纯色 + 转圈
+/// - 加载失败 / 无图：兜底图（深色渐变 + 居中 film 图标）
+/// - 成功：远端图片
+/// name 是 bundle 内本地图（demo 期遗留），有则优先用本地图避免任何网络等待。
 struct ThumbnailImage: View {
     let name: String?
     var url: String? = nil
 
     var body: some View {
-        if let raw = url, let parsed = URL(string: raw) {
-            AsyncImage(url: parsed) { phase in
-                switch phase {
-                case .success(let image):
-                    image.resizable()
-                case .empty:
-                    loadingPlaceholder
-                case .failure:
-                    loadingPlaceholder
-                @unknown default:
-                    loadingPlaceholder
-                }
-            }
-        } else if name != nil {
-            bundleImage
-        } else {
-            Rectangle().fill(AppColors.bgElevated)
-        }
-    }
-
-    /// 远端加载中 / 失败时占位：有 bundle 兜底用 bundle，没有就 bgElevated。
-    @ViewBuilder
-    private var loadingPlaceholder: some View {
-        if name != nil {
-            bundleImage
-        } else {
-            Rectangle().fill(AppColors.bgElevated)
-        }
-    }
-
-    @ViewBuilder
-    private var bundleImage: some View {
-        if let n = name,
-           let ui = UIImage(named: "\(n).jpg")
-            ?? UIImage(named: "\(n).png")
-            ?? UIImage(named: n) {
+        if let n = name, let ui = Self.bundleUIImage(n) {
             Image(uiImage: ui).resizable()
+        } else if let raw = url, let parsed = URL(string: raw) {
+            CachedRemoteThumbnail(url: parsed)
         } else {
-            Rectangle().fill(AppColors.bgElevated)
+            ThumbnailFallback()
+        }
+    }
+
+    private static func bundleUIImage(_ n: String) -> UIImage? {
+        UIImage(named: "\(n).jpg") ?? UIImage(named: "\(n).png") ?? UIImage(named: n)
+    }
+}
+
+/// 带缓存的远端缩略图。命中缓存时同步渲染，不经过 loading 占位，消除「滑回闪方块」。
+private struct CachedRemoteThumbnail: View {
+    let url: URL
+    @State private var image: UIImage?
+    @State private var failed = false
+
+    var body: some View {
+        // 每次渲染先同步查一次缓存：滑回时 @State 虽被重建，缓存仍在 → 直接出图。
+        let cached = image ?? ThumbnailCache.shared.object(forKey: url as NSURL)
+        Group {
+            if let ui = cached {
+                Image(uiImage: ui).resizable()
+            } else if failed {
+                ThumbnailFallback()
+            } else {
+                ThumbnailLoading()
+            }
+        }
+        .task(id: url) {
+            if cached != nil { return }
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                guard let ui = UIImage(data: data) else { failed = true; return }
+                ThumbnailCache.shared.setObject(ui, forKey: url as NSURL)
+                image = ui
+            } catch is CancellationError {
+                // 滑动中取消属正常，不算失败
+            } catch {
+                failed = true
+            }
+        }
+    }
+}
+
+private struct ThumbnailLoading: View {
+    var body: some View {
+        ZStack {
+            AppColors.bgElevated
+            ProgressView()
+                .tint(AppColors.textTertiary)
+        }
+    }
+}
+
+/// 封面缺失 / 加载失败的兜底图。做成有设计感的占位，而不是一块黑。
+private struct ThumbnailFallback: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [AppColors.bgElevated, AppColors.bgPrimary],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            Image(systemName: "film")
+                .font(.system(size: 28, weight: .regular))
+                .foregroundColor(AppColors.textTertiary.opacity(0.6))
         }
     }
 }

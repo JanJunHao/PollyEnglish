@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PollyEnglish · Demo Prototype</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body, #root { margin: 0; padding: 0; width: 100%; height: 100%; background: #0a0a0c; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      color: #fff;
+      overflow: hidden;
+    }
+    button { font-family: inherit; }
+    button:focus { outline: none; }
+    *::-webkit-scrollbar { width: 0; height: 0; }
+
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
+    @keyframes heroMorph {
+      0%   { /* keeps initial inline left/top/width/height */ }
+      100% {
+        left: 12px !important;
+        top: 96px !important;
+        width: calc(100% - 24px) !important;
+        height: calc((100% - 24px) * 9 / 16 - 70px) !important;
+        border-radius: 14px !important;
+        transform: none;
+      }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ─── Theme tokens ──────────────────────────────────────────────── */
+    .theme-host[data-theme="dark"] {
+      --bg: #0a0a0c;
+      --surface: rgba(255,255,255,0.04);
+      --surface-subtle: rgba(255,255,255,0.025);
+      --surface-elev: rgba(20,20,24,0.97);
+      --surface-solid: #15151a;
+      --text: #ffffff;
+      --text-sec: rgba(255,255,255,0.62);
+      --text-ter: rgba(255,255,255,0.42);
+      --text-muted: rgba(255,255,255,0.28);
+      --divider: rgba(255,255,255,0.06);
+      --divider-strong: rgba(255,255,255,0.12);
+      --chip-bg: rgba(255,255,255,0.06);
+      --chip-bg-active: rgba(255,255,255,0.10);
+      --overlay: rgba(0,0,0,0.5);
+      --tab-bar-bg: rgba(10,10,12,0.82);
+      --shadow-card: 0 8px 32px rgba(0,0,0,0.55);
+      --shadow-soft: 0 4px 14px rgba(0,0,0,0.35);
+      --card-border: 0.5px solid rgba(255,255,255,0.06);
+    }
+    .theme-host[data-theme="light"] {
+      --bg: #f4f1ec;
+      --surface: #ffffff;
+      --surface-subtle: rgba(10,10,12,0.025);
+      --surface-elev: #ffffff;
+      --surface-solid: #ffffff;
+      --text: #0a0a0c;
+      --text-sec: rgba(10,10,12,0.62);
+      --text-ter: rgba(10,10,12,0.42);
+      --text-muted: rgba(10,10,12,0.25);
+      --divider: rgba(10,10,12,0.08);
+      --divider-strong: rgba(10,10,12,0.16);
+      --chip-bg: rgba(10,10,12,0.045);
+      --chip-bg-active: rgba(10,10,12,0.10);
+      --overlay: rgba(0,0,0,0.35);
+      --tab-bar-bg: rgba(244,241,236,0.85);
+      --shadow-card: 0 6px 22px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.04);
+      --shadow-soft: 0 2px 8px rgba(0,0,0,0.06);
+      --card-border: 0.5px solid rgba(10,10,12,0.08);
+    }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="data.js"></script>
+  <script type="text/babel" src="icons.jsx"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="theme.jsx"></script>
+  <script type="text/babel" src="thumbs.jsx"></script>
+  <script type="text/babel" src="tabbar.jsx"></script>
+  <script type="text/babel" src="home.jsx"></script>
+  <script type="text/babel" src="articles.jsx"></script>
+  <script type="text/babel" src="recent.jsx"></script>
+  <script type="text/babel" src="library.jsx"></script>
+  <script type="text/babel" src="me.jsx"></script>
+  <script type="text/babel" src="vocab.jsx"></script>
+  <script type="text/babel" src="favorites.jsx"></script>
+  <script type="text/babel" src="files.jsx"></script>
+  <script type="text/babel" src="player.jsx"></script>
+  <script type="text/babel" src="cards.jsx"></script>
+  <script type="text/babel" src="sheets.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+</body>
+</html>

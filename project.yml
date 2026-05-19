@@ -36,21 +36,6 @@ targets:
           - "Config/Secrets.xcconfig"
           - "Config/Secrets.xcconfig.template"
           - "Config/Generated.xcconfig"
-          # 合规红线：TED 系 CC-BY-NC-ND，bundle 不许 host mp4。
-          # 这 3 个 demo 全部走 youtube_embed 路径（PlayerView 分发），mp4 是历史 dev 残留，
-          # 这里 exclude 让 build 不打进 IPA，省 100+MB 包体且过审。
-          # 切回 .native 测试时可临时注释这几行 + xcodegen generate。
-          - "Resources/Videos/julian-treasure.mp4"
-          - "Resources/Videos/ted-ed-dream.mp4"
-          - "Resources/Videos/tim-urban.mp4"
-          # 原始 vtt 字幕也是 YouTube/TED 版权材料，不进 bundle。
-          # Polly 自己生成的 Subtitles/demo-*.json 是加工产物，照常 ship。
-          - "Resources/Videos/julian-treasure.en.vtt"
-          - "Resources/Videos/julian-treasure.zh-CN.vtt"
-          - "Resources/Videos/ted-ed-dream.en.vtt"
-          - "Resources/Videos/ted-ed-dream.zh-CN.vtt"
-          - "Resources/Videos/tim-urban.en.vtt"
-          - "Resources/Videos/tim-urban.zh-CN.vtt"
 
     dependencies:
       - package: WhisperKit
@@ -71,6 +56,9 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         UIRequiresFullScreen: true
+        # 画中画 / 后台播放：PiP 必需。没有 audio 后台模式，App 进后台会立即暂停，无法出小窗。
+        UIBackgroundModes:
+          - audio
         NSMicrophoneUsageDescription: Polly 需要访问麦克风以录制你的跟读发音
         # polly-server 地址 + 鉴权 Bearer token（来自 Secrets.xcconfig）
         PollyServerURL: $(POLLY_SERVER_URL)
